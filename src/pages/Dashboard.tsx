@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { QuestionItem } from '@/components/QuestionItem';
 import { ProgressStats } from '@/components/ProgressStats';
+import { SearchAndFilter } from '@/components/SearchAndFilter';
+import { ProgressCharts } from '@/components/ProgressCharts';
 
 interface Sheet {
   id: string;
@@ -41,6 +43,7 @@ const Dashboard = () => {
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [userProgress, setUserProgress] = useState<UserProgress[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -76,6 +79,7 @@ const Dashboard = () => {
 
       setSheets(sheetsData || []);
       setQuestions(questionsData || []);
+      setFilteredQuestions(questionsData || []);
       setUserProgress(progressData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -97,8 +101,16 @@ const Dashboard = () => {
     });
   };
 
+  const handleFilteredQuestionsChange = (filtered: Question[]) => {
+    setFilteredQuestions(filtered);
+  };
+
+  const handleSortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
+    // Sorting is handled in SearchAndFilter component
+  };
+
   const getSheetProgress = (sheetId: string) => {
-    const sheetQuestions = questions.filter(q => q.sheet_id === sheetId);
+    const sheetQuestions = filteredQuestions.filter(q => q.sheet_id === sheetId);
     const completedQuestions = sheetQuestions.filter(q => 
       userProgress.some(p => p.question_id === q.id && p.completed)
     );
@@ -110,7 +122,7 @@ const Dashboard = () => {
   };
 
   const getTopicProgress = (sheetId: string, topic: string) => {
-    const topicQuestions = questions.filter(q => q.sheet_id === sheetId && q.topic === topic);
+    const topicQuestions = filteredQuestions.filter(q => q.sheet_id === sheetId && q.topic === topic);
     const completedQuestions = topicQuestions.filter(q => 
       userProgress.some(p => p.question_id === q.id && p.completed)
     );
@@ -153,6 +165,17 @@ const Dashboard = () => {
       {/* Progress Statistics */}
       <ProgressStats questions={questions} userProgress={userProgress} />
 
+      {/* Progress Charts */}
+      <ProgressCharts questions={questions} userProgress={userProgress} />
+
+      {/* Search and Filter */}
+      <SearchAndFilter 
+        questions={questions}
+        userProgress={userProgress}
+        onFilteredQuestionsChange={handleFilteredQuestionsChange}
+        onSortChange={handleSortChange}
+      />
+
       <div className="grid gap-6">
         {sheets.map((sheet) => {
           const progress = getSheetProgress(sheet.id);
@@ -180,7 +203,7 @@ const Dashboard = () => {
                 <div className="space-y-4">
                   {sheet.topics.map((topic) => {
                     const topicProgress = getTopicProgress(sheet.id, topic);
-                    const topicQuestions = questions.filter(q => q.sheet_id === sheet.id && q.topic === topic);
+                    const topicQuestions = filteredQuestions.filter(q => q.sheet_id === sheet.id && q.topic === topic);
                     
                     return (
                       <Collapsible key={topic}>
