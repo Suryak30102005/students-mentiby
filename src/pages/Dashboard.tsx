@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronRight, BookOpen, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { QuestionItem } from '@/components/QuestionItem';
+import { ProgressStats } from '@/components/ProgressStats';
 
 interface Sheet {
   id: string;
@@ -30,6 +32,8 @@ interface UserProgress {
   completed: boolean;
   marked_for_revision: boolean;
   note?: string;
+  time_spent?: number;
+  completed_at?: string;
 }
 
 const Dashboard = () => {
@@ -78,6 +82,19 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleProgressUpdate = (questionId: string, updates: Partial<UserProgress>) => {
+    setUserProgress(prev => {
+      const existingIndex = prev.findIndex(p => p.question_id === questionId);
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = { ...updated[existingIndex], ...updates };
+        return updated;
+      } else {
+        return [...prev, { question_id: questionId, completed: false, marked_for_revision: false, ...updates }];
+      }
+    });
   };
 
   const getSheetProgress = (sheetId: string) => {
@@ -132,6 +149,9 @@ const Dashboard = () => {
           <p className="text-muted-foreground">Track your coding progress across different practice sheets</p>
         </div>
       </div>
+
+      {/* Progress Statistics */}
+      <ProgressStats questions={questions} userProgress={userProgress} />
 
       <div className="grid gap-6">
         {sheets.map((sheet) => {
@@ -189,36 +209,13 @@ const Dashboard = () => {
                             {topicQuestions.map((question) => {
                               const questionProgress = userProgress.find(p => p.question_id === question.id);
                               return (
-                                <div key={question.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                  <div className="flex items-center space-x-3">
-                                    <div className={`w-3 h-3 rounded-full ${getDifficultyColor(question.difficulty)}`} />
-                                    <div>
-                                      <div className="font-medium">{question.title}</div>
-                                      <div className="flex space-x-1 mt-1">
-                                        {question.tags.map((tag) => (
-                                          <Badge key={tag} variant="secondary" className="text-xs">
-                                            {tag}
-                                          </Badge>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    {questionProgress?.completed && (
-                                      <Badge variant="default">Completed</Badge>
-                                    )}
-                                    {questionProgress?.marked_for_revision && (
-                                      <Badge variant="outline">For Revision</Badge>
-                                    )}
-                                    {question.solve_url && (
-                                      <Button size="sm" variant="outline" asChild>
-                                        <a href={question.solve_url} target="_blank" rel="noopener noreferrer">
-                                          Solve
-                                        </a>
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
+                                <QuestionItem
+                                  key={question.id}
+                                  question={question}
+                                  progress={questionProgress}
+                                  userId={user?.id || ''}
+                                  onProgressUpdate={handleProgressUpdate}
+                                />
                               );
                             })}
                           </div>
