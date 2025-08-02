@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -111,7 +111,7 @@ export function SearchAndFilter({
   };
 
   // Apply filters whenever any filter changes
-  React.useEffect(() => {
+  useEffect(() => {
     applyFilters();
   }, [searchTerm, selectedDifficulty, selectedTopic, selectedStatus, sortBy, sortOrder, questions, userProgress]);
 
