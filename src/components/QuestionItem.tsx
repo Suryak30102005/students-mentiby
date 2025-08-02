@@ -102,9 +102,11 @@ export function QuestionItem({ question, progress, userId, onProgressUpdate }: Q
           question_id: question.id,
           completed: progress?.completed || false,
           marked_for_revision: progress?.marked_for_revision || false,
-          note: progress?.note,
+          note: progress?.note || '',
           time_spent: progress?.time_spent || 0,
           ...updates,
+        }, {
+          onConflict: 'user_id,question_id'
         });
 
       if (error) throw error;
