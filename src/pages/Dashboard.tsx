@@ -11,6 +11,7 @@ import { QuestionItem } from '@/components/QuestionItem';
 import { ProgressStats } from '@/components/ProgressStats';
 import { SearchAndFilter } from '@/components/SearchAndFilter';
 import { ProgressCharts } from '@/components/ProgressCharts';
+import { AdvancedFeatures } from '@/components/AdvancedFeatures';
 
 interface Sheet {
   id: string;
@@ -167,6 +168,9 @@ const Dashboard = () => {
 
       {/* Progress Charts */}
       <ProgressCharts questions={questions} userProgress={userProgress} />
+
+      {/* Advanced Features */}
+      <AdvancedFeatures questions={questions} userProgress={userProgress} />
 
       {/* Search and Filter */}
       <SearchAndFilter 

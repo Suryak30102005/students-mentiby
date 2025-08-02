@@ -1,7 +1,8 @@
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,9 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const { user, signOut } = useAuth();
+
+  // Check if user is admin (you might want to store this in user metadata or profiles table)
+  const isAdmin = user?.email === 'admin@example.com'; // Replace with actual admin check
 
   return (
     <div className="min-h-screen bg-background">
@@ -21,6 +25,14 @@ const Layout = ({ children }: LayoutProps) => {
           {user && (
             <div className="flex items-center space-x-4">
               <ThemeToggle />
+              {isAdmin && (
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/admin">
+                    <Settings className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Admin</span>
+                  </Link>
+                </Button>
+              )}
               <div className="flex items-center space-x-2 text-sm hidden sm:flex">
                 <User className="h-4 w-4" />
                 <span>{user.email}</span>
