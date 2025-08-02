@@ -100,7 +100,7 @@ export function ProgressStats({ questions, userProgress }: ProgressStatsProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
       {/* Overall Progress */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

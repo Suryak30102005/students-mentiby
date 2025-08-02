@@ -13,6 +13,7 @@ import {
   StickyNote,
   ExternalLink 
 } from 'lucide-react';
+import { QuestionDetails } from '@/components/QuestionDetails';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -147,7 +148,7 @@ export function QuestionItem({ question, progress, userId, onProgressUpdate }: Q
 
   return (
     <Card className="p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
         <div className="flex items-center space-x-3">
           <Checkbox
             checked={progress?.completed || false}
@@ -155,11 +156,13 @@ export function QuestionItem({ question, progress, userId, onProgressUpdate }: Q
             className="h-5 w-5"
           />
           <div className={`w-3 h-3 rounded-full ${getDifficultyColor(question.difficulty)}`} />
-          <div>
-            <div className={`font-medium ${progress?.completed ? 'line-through text-muted-foreground' : ''}`}>
-              {question.title}
-            </div>
-            <div className="flex space-x-1 mt-1">
+          <div className="min-w-0 flex-1">
+            <QuestionDetails question={question} progress={progress}>
+              <button className={`font-medium text-left hover:text-primary transition-colors ${progress?.completed ? 'line-through text-muted-foreground' : ''}`}>
+                {question.title}
+              </button>
+            </QuestionDetails>
+            <div className="flex flex-wrap gap-1 mt-1">
               {question.tags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}
@@ -169,11 +172,12 @@ export function QuestionItem({ question, progress, userId, onProgressUpdate }: Q
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Timer */}
           <div className="flex items-center space-x-2 text-sm">
             <Clock className="h-4 w-4" />
-            <span>{formatTime(timeSpent)}</span>
+            <span className="hidden sm:inline">{formatTime(timeSpent)}</span>
+            <span className="sm:hidden">{formatTime(timeSpent)}</span>
             <Button
               size="sm"
               variant="outline"
@@ -209,17 +213,20 @@ export function QuestionItem({ question, progress, userId, onProgressUpdate }: Q
             <Button size="sm" variant="outline" asChild>
               <a href={question.solve_url} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3 w-3" />
+                <span className="hidden sm:inline ml-2">Solve</span>
               </a>
             </Button>
           )}
 
           {/* Status Badges */}
-          {progress?.completed && (
-            <Badge variant="default">Completed</Badge>
-          )}
-          {progress?.marked_for_revision && (
-            <Badge variant="outline">For Revision</Badge>
-          )}
+          <div className="flex space-x-1">
+            {progress?.completed && (
+              <Badge variant="default" className="hidden sm:inline-flex">Completed</Badge>
+            )}
+            {progress?.marked_for_revision && (
+              <Badge variant="outline" className="hidden sm:inline-flex">For Revision</Badge>
+            )}
+          </div>
         </div>
       </div>
 

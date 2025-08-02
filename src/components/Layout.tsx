@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { LogOut, User } from 'lucide-react';
 
 interface LayoutProps {
@@ -19,13 +20,14 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
           {user && (
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-sm">
+              <ThemeToggle />
+              <div className="flex items-center space-x-2 text-sm hidden sm:flex">
                 <User className="h-4 w-4" />
                 <span>{user.email}</span>
               </div>
               <Button variant="outline" size="sm" onClick={signOut}>
                 <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                <span className="hidden sm:inline">Sign Out</span>
               </Button>
             </div>
           )}

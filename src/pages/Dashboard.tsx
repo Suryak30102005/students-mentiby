@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { QuestionItem } from '@/components/QuestionItem';
 import { ProgressStats } from '@/components/ProgressStats';
 import { SearchAndFilter } from '@/components/SearchAndFilter';
+import { BulkActions } from '@/components/BulkActions';
 import { ProgressCharts } from '@/components/ProgressCharts';
 
 interface Sheet {
@@ -88,17 +89,23 @@ const Dashboard = () => {
     }
   };
 
-  const handleProgressUpdate = (questionId: string, updates: Partial<UserProgress>) => {
+  const handleProgressUpdate = (updates: { questionId: string; progress: Partial<UserProgress> }[]) => {
     setUserProgress(prev => {
-      const existingIndex = prev.findIndex(p => p.question_id === questionId);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = { ...updated[existingIndex], ...updates };
-        return updated;
-      } else {
-        return [...prev, { question_id: questionId, completed: false, marked_for_revision: false, ...updates }];
-      }
+      const updated = [...prev];
+      updates.forEach(({ questionId, progress }) => {
+        const existingIndex = updated.findIndex(p => p.question_id === questionId);
+        if (existingIndex >= 0) {
+          updated[existingIndex] = { ...updated[existingIndex], ...progress };
+        } else {
+          updated.push({ question_id: questionId, completed: false, marked_for_revision: false, ...progress });
+        }
+      });
+      return updated;
     });
+  };
+
+  const handleSingleProgressUpdate = (questionId: string, updates: Partial<UserProgress>) => {
+    handleProgressUpdate([{ questionId, progress: updates }]);
   };
 
   const handleFilteredQuestionsChange = (filtered: Question[]) => {
@@ -176,6 +183,14 @@ const Dashboard = () => {
         onSortChange={handleSortChange}
       />
 
+      {/* Bulk Actions */}
+      <BulkActions 
+        questions={filteredQuestions}
+        userProgress={userProgress}
+        userId={user?.id || ''}
+        onProgressUpdate={handleProgressUpdate}
+      />
+
       <div className="grid gap-6">
         {sheets.map((sheet) => {
           const progress = getSheetProgress(sheet.id);
@@ -237,7 +252,7 @@ const Dashboard = () => {
                                   question={question}
                                   progress={questionProgress}
                                   userId={user?.id || ''}
-                                  onProgressUpdate={handleProgressUpdate}
+                                  onProgressUpdate={handleSingleProgressUpdate}
                                 />
                               );
                             })}
