@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -12,32 +11,9 @@ import { ProgressStats } from '@/components/ProgressStats';
 import { SearchAndFilter } from '@/components/SearchAndFilter';
 import { ProgressCharts } from '@/components/ProgressCharts';
 import { AdvancedFeatures } from '@/components/AdvancedFeatures';
-
-interface Sheet {
-  id: string;
-  title: string;
-  description: string;
-  topics: string[];
-}
-
-interface Question {
-  id: string;
-  sheet_id: string;
-  title: string;
-  topic: string;
-  tags: string[];
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  solve_url?: string;
-}
-
-interface UserProgress {
-  question_id: string;
-  completed: boolean;
-  marked_for_revision: boolean;
-  note?: string;
-  time_spent?: number;
-  completed_at?: string;
-}
+import { sheetService, questionService, progressService, realtimeService } from '@/services/supabase';
+import { calculateTopicProgress, getUniqueTopics } from '@/utils';
+import type { Sheet, Question, UserProgress } from '@/types';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -57,96 +33,72 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user) return;
 
-    const questionsSubscription = supabase
-      .channel('questions-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'questions'
-        },
-        () => {
-          fetchData(); // Refetch all data when questions change
-        }
-      )
-      .subscribe();
+    console.log('Setting up real-time subscriptions for dashboard');
 
-    const sheetsSubscription = supabase
-      .channel('sheets-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sheets'
-        },
-        () => {
-          fetchData(); // Refetch all data when sheets change
-        }
-      )
-      .subscribe();
+    const questionsSubscription = realtimeService.subscribeToQuestions((payload) => {
+      console.log('Questions changed in dashboard:', payload);
+      fetchData();
+    });
+
+    const progressSubscription = realtimeService.subscribeToUserProgress((payload) => {
+      console.log('User progress changed in dashboard:', payload);  
+      fetchData();
+    });
 
     return () => {
-      supabase.removeChannel(questionsSubscription);
-      supabase.removeChannel(sheetsSubscription);
+      console.log('Cleaning up dashboard subscriptions');
+      realtimeService.unsubscribe(questionsSubscription);
+      realtimeService.unsubscribe(progressSubscription);
     };
   }, [user]);
 
   const fetchData = async () => {
+    if (!user) return;
+
+    setLoading(true);
     try {
-      console.log('Dashboard: Fetching data...');
-      
-      // Fetch sheets
-      const { data: sheetsData, error: sheetsError } = await supabase
-        .from('sheets')
-        .select('*');
+      const [sheetsResult, questionsResult, progressResult] = await Promise.all([
+        sheetService.getAllSheets(),
+        questionService.getAllQuestions(),
+        progressService.getUserProgress(user.id)
+      ]);
 
-      if (sheetsError) throw sheetsError;
-      console.log('Dashboard: Fetched sheets:', sheetsData);
+      if (sheetsResult.error) throw sheetsResult.error;
+      if (questionsResult.error) throw questionsResult.error;
+      if (progressResult.error) throw progressResult.error;
 
-      // Fetch questions
-      const { data: questionsData, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .order('order_index');
-
-      if (questionsError) throw questionsError;
-      console.log('Dashboard: Fetched questions:', questionsData);
-
-      // Fetch user progress
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user?.id);
-
-      if (progressError) throw progressError;
-      console.log('Dashboard: Fetched user progress:', progressData);
-
-      setSheets(sheetsData || []);
-      setQuestions(questionsData || []);
-      setFilteredQuestions(questionsData || []);
-      setUserProgress(progressData || []);
-      
-      console.log('Dashboard: Data updated successfully');
+      setSheets(sheetsResult.data || []);
+      setQuestions(questionsResult.data || []);
+      setUserProgress(progressResult.data || []);
+      setFilteredQuestions(questionsResult.data || []);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProgressUpdate = (questionId: string, updates: Partial<UserProgress>) => {
-    setUserProgress(prev => {
-      const existingIndex = prev.findIndex(p => p.question_id === questionId);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = { ...updated[existingIndex], ...updates };
-        return updated;
-      } else {
-        return [...prev, { question_id: questionId, completed: false, marked_for_revision: false, ...updates }];
-      }
-    });
+  const handleProgressUpdate = async (questionId: string, updates: Partial<UserProgress>) => {
+    if (!user) return;
+
+    try {
+      const result = await progressService.updateProgress(user.id, questionId, updates);
+      if (result.error) throw result.error;
+
+      // Update local state
+      setUserProgress(prev => {
+        const existingIndex = prev.findIndex(p => p.question_id === questionId);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = { ...updated[existingIndex], ...updates };
+          return updated;
+        } else {
+          return [...prev, result.data];
+        }
+      });
+    } catch (error) {
+      console.error('Error updating progress:', error);
+    }
   };
 
   const handleFilteredQuestionsChange = (filtered: Question[]) => {
@@ -170,24 +122,11 @@ const Dashboard = () => {
   };
 
   const getTopicProgress = (sheetId: string, topic: string) => {
-    const topicQuestions = filteredQuestions.filter(q => q.sheet_id === sheetId && q.topic === topic);
-    const completedQuestions = topicQuestions.filter(q => 
-      userProgress.some(p => p.question_id === q.id && p.completed)
+    return calculateTopicProgress(
+      filteredQuestions.filter(q => q.sheet_id === sheetId),
+      userProgress,
+      topic
     );
-    return {
-      total: topicQuestions.length,
-      completed: completedQuestions.length,
-      percentage: topicQuestions.length > 0 ? Math.round((completedQuestions.length / topicQuestions.length) * 100) : 0
-    };
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'Easy': return 'bg-green-500';
-      case 'Medium': return 'bg-yellow-500';
-      case 'Hard': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
   };
 
   if (loading) {

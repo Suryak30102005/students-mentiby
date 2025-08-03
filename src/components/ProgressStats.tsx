@@ -12,24 +12,8 @@ import {
   Calendar,
   Timer
 } from 'lucide-react';
-
-interface Question {
-  id: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-}
-
-interface UserProgress {
-  question_id: string;
-  completed: boolean;
-  marked_for_revision: boolean;
-  time_spent?: number;
-  completed_at?: string;
-}
-
-interface ProgressStatsProps {
-  questions: Question[];
-  userProgress: UserProgress[];
-}
+import { formatTime, calculateDifficultyStats, calculateCurrentStreak, getQuestionsCompletedToday, getDifficultyColor } from '@/utils';
+import type { ProgressStatsProps } from '@/types';
 
 export function ProgressStats({ questions, userProgress }: ProgressStatsProps) {
   const totalQuestions = questions.length;
@@ -39,73 +23,13 @@ export function ProgressStats({ questions, userProgress }: ProgressStatsProps) {
   
   const completionRate = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
   
-  // Calculate streak (consecutive days with completions)
-  const today = new Date();
-  let currentStreak = 0;
-  let checkDate = new Date(today);
-  
-  while (true) {
-    const dateStr = checkDate.toISOString().split('T')[0];
-    const completedToday = userProgress.some(p => 
-      p.completed && p.completed_at && 
-      new Date(p.completed_at).toISOString().split('T')[0] === dateStr
-    );
-    
-    if (completedToday) {
-      currentStreak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-  
-  // Calculate average time per question
+  // Calculate stats using utility functions
+  const currentStreak = calculateCurrentStreak(userProgress);
   const avgTimePerQuestion = completedQuestions > 0 ? Math.round(totalTimeSpent / completedQuestions) : 0;
-  
-  // Calculate today's completions
-  const todayStr = today.toISOString().split('T')[0];
-  const questionsCompletedToday = userProgress.filter(p => 
-    p.completed && p.completed_at && 
-    new Date(p.completed_at).toISOString().split('T')[0] === todayStr
-  ).length;
+  const questionsCompletedToday = getQuestionsCompletedToday(userProgress);
   
   // Difficulty breakdown
-  const difficultyStats = {
-    Easy: {
-      total: questions.filter(q => q.difficulty === 'Easy').length,
-      completed: questions.filter(q => 
-        q.difficulty === 'Easy' && 
-        userProgress.some(p => p.question_id === q.id && p.completed)
-      ).length
-    },
-    Medium: {
-      total: questions.filter(q => q.difficulty === 'Medium').length,
-      completed: questions.filter(q => 
-        q.difficulty === 'Medium' && 
-        userProgress.some(p => p.question_id === q.id && p.completed)
-      ).length
-    },
-    Hard: {
-      total: questions.filter(q => q.difficulty === 'Hard').length,
-      completed: questions.filter(q => 
-        q.difficulty === 'Hard' && 
-        userProgress.some(p => p.question_id === q.id && p.completed)
-      ).length
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else if (minutes > 0) {
-      return `${minutes}m`;
-    } else {
-      return `${seconds}s`;
-    }
-  };
+  const difficultyStats = calculateDifficultyStats(questions, userProgress);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
