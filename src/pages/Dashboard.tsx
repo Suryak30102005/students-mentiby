@@ -280,7 +280,7 @@ const Dashboard = () => {
                       const topicQuestions = filteredQuestions.filter(q => q.sheet_id === sheet.id && q.topic === topic);
                       
                       return (
-                        <Collapsible key={topic} defaultOpen={false}>
+                        <Collapsible key={topic} defaultOpen={false} className="data-[state=open]:bg-muted/30 rounded-lg transition-all">
                           <CollapsibleTrigger asChild>
                             <Button 
                               variant="ghost" 
