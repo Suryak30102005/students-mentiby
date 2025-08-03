@@ -274,7 +274,8 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-3">
-                    {sheet.topics.map((topic) => {
+                    {/* Show questions grouped by their actual topics instead of predefined sheet topics */}
+                    {[...new Set(filteredQuestions.filter(q => q.sheet_id === sheet.id).map(q => q.topic))].map((topic) => {
                       const topicProgress = getTopicProgress(sheet.id, topic);
                       const topicQuestions = filteredQuestions.filter(q => q.sheet_id === sheet.id && q.topic === topic);
                       
