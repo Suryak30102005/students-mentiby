@@ -177,16 +177,22 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Charts Section */}
+        {/* Progress Analytics Section */}
         <div className="space-y-6">
-          <div className="flex items-center space-x-2">
-            <div className="h-1 w-8 bg-primary rounded-full"></div>
-            <h2 className="text-xl font-semibold">Progress Analytics</h2>
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/60 rounded-full"></div>
+              <h2 className="text-2xl font-bold text-primary">Progress Analytics</h2>
+              <div className="h-1 w-12 bg-gradient-to-l from-primary to-primary/60 rounded-full"></div>
+            </div>
+            <p className="text-muted-foreground">Detailed insights into your learning patterns and achievements</p>
           </div>
-          <ProgressCharts questions={questions} userProgress={userProgress} />
+          <div className="bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm border rounded-2xl p-6">
+            <ProgressCharts questions={questions} userProgress={userProgress} />
+          </div>
         </div>
 
-        {/* Controls Section */}
+        {/* Practice Controls */}
         <div className="space-y-6">
           <div className="flex items-center space-x-2">
             <div className="h-1 w-8 bg-primary rounded-full"></div>
