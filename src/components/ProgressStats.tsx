@@ -100,7 +100,7 @@ export function ProgressStats({ questions, userProgress }: ProgressStatsProps) {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
       {/* Overall Progress */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -130,63 +130,8 @@ export function ProgressStats({ questions, userProgress }: ProgressStatsProps) {
         </CardContent>
       </Card>
 
-      {/* Current Streak */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
-          <Flame className="h-4 w-4 text-orange-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{currentStreak}</div>
-          <p className="text-xs text-muted-foreground">
-            {currentStreak === 1 ? 'day' : 'days'}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Average Time */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Avg Time</CardTitle>
-          <Trophy className="h-4 w-4 text-yellow-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatTime(avgTimePerQuestion)}</div>
-          <p className="text-xs text-muted-foreground">
-            per question
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Completed */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Completed</CardTitle>
-          <CheckCircle className="h-4 w-4 text-green-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{completedQuestions}</div>
-          <p className="text-xs text-muted-foreground">
-            Questions solved
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* For Revision */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">For Revision</CardTitle>
-          <BookmarkCheck className="h-4 w-4 text-blue-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{revisionQuestions}</div>
-          <p className="text-xs text-muted-foreground">
-            Marked for review
-          </p>
-        </CardContent>
-      </Card>
       {/* Difficulty Breakdown */}
-      <Card className="md:col-span-2 lg:col-span-6">
+      <Card className="md:col-span-2 lg:col-span-4">
         <CardHeader>
           <CardTitle className="text-sm font-medium flex items-center">
             <TrendingUp className="h-4 w-4 mr-2" />
