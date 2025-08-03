@@ -168,7 +168,7 @@ const AdminPanel = () => {
       setSheetForm({ title: '', description: '', topics: '' });
       setEditingSheet(null);
       setIsSheetDialogOpen(false);
-      fetchData();
+      await fetchData(); // Ensure data is refreshed
     } catch (error) {
       console.error('Error saving sheet:', error);
       toast({
@@ -229,7 +229,7 @@ const AdminPanel = () => {
       });
       setEditingQuestion(null);
       setIsQuestionDialogOpen(false);
-      fetchData();
+      await fetchData(); // Ensure data is refreshed
     } catch (error) {
       console.error('Error saving question:', error);
       toast({

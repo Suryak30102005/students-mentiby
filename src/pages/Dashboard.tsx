@@ -53,6 +53,46 @@ const Dashboard = () => {
     }
   }, [user]);
 
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const questionsSubscription = supabase
+      .channel('questions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'questions'
+        },
+        () => {
+          fetchData(); // Refetch all data when questions change
+        }
+      )
+      .subscribe();
+
+    const sheetsSubscription = supabase
+      .channel('sheets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sheets'
+        },
+        () => {
+          fetchData(); // Refetch all data when sheets change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(questionsSubscription);
+      supabase.removeChannel(sheetsSubscription);
+    };
+  }, [user]);
+
   const fetchData = async () => {
     try {
       // Fetch sheets
