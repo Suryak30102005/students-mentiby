@@ -79,6 +79,51 @@ const AdminPanel = () => {
     }
   }, [user]);
 
+  // Set up real-time subscriptions for admin panel
+  useEffect(() => {
+    if (!user || userRole !== 'admin') return;
+
+    console.log('Setting up real-time subscriptions for admin panel');
+
+    const questionsSubscription = supabase
+      .channel('admin-questions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'questions'
+        },
+        (payload) => {
+          console.log('Questions changed in admin panel:', payload);
+          fetchData(); // Refetch all data when questions change
+        }
+      )
+      .subscribe();
+
+    const sheetsSubscription = supabase
+      .channel('admin-sheets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sheets'
+        },
+        (payload) => {
+          console.log('Sheets changed in admin panel:', payload);
+          fetchData(); // Refetch all data when sheets change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up admin panel subscriptions');
+      supabase.removeChannel(questionsSubscription);
+      supabase.removeChannel(sheetsSubscription);
+    };
+  }, [user, userRole]);
+
   const checkAdminAccess = async () => {
     if (user) {
       const { data } = await supabase
@@ -101,6 +146,7 @@ const AdminPanel = () => {
   };
 
   const fetchData = async () => {
+    console.log('Fetching admin panel data...');
     try {
       const { data: sheetsData, error: sheetsError } = await supabase
         .from('sheets')
@@ -116,6 +162,9 @@ const AdminPanel = () => {
 
       if (questionsError) throw questionsError;
 
+      console.log('Fetched sheets:', sheetsData?.length);
+      console.log('Fetched questions:', questionsData?.length);
+      
       setSheets(sheetsData || []);
       setQuestions(questionsData || []);
     } catch (error) {
