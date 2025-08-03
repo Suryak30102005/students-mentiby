@@ -15,7 +15,7 @@ const Layout = ({ children }: LayoutProps) => {
   const isAdmin = user?.email === 'admin@example.com'; // Replace with actual admin check
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <header className="fixed top-0 left-0 right-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
@@ -57,7 +57,7 @@ const Layout = ({ children }: LayoutProps) => {
           )}
         </div>
       </header>
-      <main className="container mx-auto px-4 py-6 pt-32">
+      <main className="pt-32">
         {children}
       </main>
     </div>

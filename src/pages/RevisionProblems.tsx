@@ -129,7 +129,7 @@ const RevisionProblems = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="space-y-8">
       <div className="container max-w-7xl mx-auto space-y-8 px-4 py-6">
         {/* Hero Section */}
         <div className="text-center space-y-4 py-8">
