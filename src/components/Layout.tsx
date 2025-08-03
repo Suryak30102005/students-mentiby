@@ -85,7 +85,7 @@ const Layout = ({ children }: LayoutProps) => {
           )}
         </div>
       </header>
-      <main className="pt-32">
+      <main className="pt-20">
         {children}
       </main>
     </div>
