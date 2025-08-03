@@ -95,12 +95,15 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
+      console.log('Dashboard: Fetching data...');
+      
       // Fetch sheets
       const { data: sheetsData, error: sheetsError } = await supabase
         .from('sheets')
         .select('*');
 
       if (sheetsError) throw sheetsError;
+      console.log('Dashboard: Fetched sheets:', sheetsData);
 
       // Fetch questions
       const { data: questionsData, error: questionsError } = await supabase
@@ -109,6 +112,7 @@ const Dashboard = () => {
         .order('order_index');
 
       if (questionsError) throw questionsError;
+      console.log('Dashboard: Fetched questions:', questionsData);
 
       // Fetch user progress
       const { data: progressData, error: progressError } = await supabase
@@ -117,11 +121,14 @@ const Dashboard = () => {
         .eq('user_id', user?.id);
 
       if (progressError) throw progressError;
+      console.log('Dashboard: Fetched user progress:', progressData);
 
       setSheets(sheetsData || []);
       setQuestions(questionsData || []);
       setFilteredQuestions(questionsData || []);
       setUserProgress(progressData || []);
+      
+      console.log('Dashboard: Data updated successfully');
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
