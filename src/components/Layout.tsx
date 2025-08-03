@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User, Settings, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface LayoutProps {
@@ -25,6 +25,12 @@ const Layout = ({ children }: LayoutProps) => {
           {user && (
             <div className="flex items-center space-x-4">
               <ThemeToggle />
+              <Button asChild variant="outline" size="sm">
+                <Link to="/analytics">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Analytics</span>
+                </Link>
+              </Button>
               {isAdmin && (
                 <Button asChild variant="outline" size="sm">
                   <Link to="/admin">
