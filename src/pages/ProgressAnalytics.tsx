@@ -1,28 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { ProgressCharts } from '@/components/ProgressCharts';
 import { ProgressStats } from '@/components/ProgressStats';
 import { AdvancedFeatures } from '@/components/AdvancedFeatures';
-
-interface Question {
-  id: string;
-  sheet_id: string;
-  title: string;
-  topic: string;
-  tags: string[];
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  solve_url?: string;
-}
-
-interface UserProgress {
-  question_id: string;
-  completed: boolean;
-  marked_for_revision: boolean;
-  note?: string;
-  time_spent?: number;
-  completed_at?: string;
-}
+import { questionService, progressService } from '@/services/supabase';
+import type { Question, UserProgress } from '@/types';
 
 const ProgressAnalytics = () => {
   const { user } = useAuth();
@@ -37,27 +19,22 @@ const ProgressAnalytics = () => {
   }, [user]);
 
   const fetchData = async () => {
+    if (!user) return;
+
+    setLoading(true);
     try {
-      // Fetch questions
-      const { data: questionsData, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .order('order_index');
+      const [questionsResult, progressResult] = await Promise.all([
+        questionService.getAllQuestions(),
+        progressService.getUserProgress(user.id)
+      ]);
 
-      if (questionsError) throw questionsError;
+      if (questionsResult.error) throw questionsResult.error;
+      if (progressResult.error) throw progressResult.error;
 
-      // Fetch user progress
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user?.id);
-
-      if (progressError) throw progressError;
-
-      setQuestions(questionsData || []);
-      setUserProgress(progressData || []);
+      setQuestions(questionsResult.data || []);
+      setUserProgress(progressResult.data || []);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching progress analytics data:', error);
     } finally {
       setLoading(false);
     }
