@@ -21,27 +21,10 @@ import {
   Settings
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-
-interface Sheet {
-  id: string;
-  title: string;
-  description: string;
-  topics: string[];
-  created_at: string;
-}
-
-interface Question {
-  id: string;
-  sheet_id: string;
-  title: string;
-  topic: string;
-  tags: string[];
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  solve_url?: string;
-  order_index: number;
-}
+import { sheetService, questionService, profileService, realtimeService } from '@/services/supabase';
+import { formatArrayForInput, parseInputToArray } from '@/utils';
+import type { Sheet, Question, QuestionFormData, SheetFormData } from '@/types';
 
 const AdminPanel = () => {
   const { user } = useAuth();
@@ -85,56 +68,30 @@ const AdminPanel = () => {
 
     console.log('Setting up real-time subscriptions for admin panel');
 
-    const questionsSubscription = supabase
-      .channel('admin-questions-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'questions'
-        },
-        (payload) => {
-          console.log('Questions changed in admin panel:', payload);
-          fetchData(); // Refetch all data when questions change
-        }
-      )
-      .subscribe();
+    const questionsSubscription = realtimeService.subscribeToQuestions((payload) => {
+      console.log('Questions changed in admin panel:', payload);
+      fetchData(); // Refetch all data when questions change
+    });
 
-    const sheetsSubscription = supabase
-      .channel('admin-sheets-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sheets'
-        },
-        (payload) => {
-          console.log('Sheets changed in admin panel:', payload);
-          fetchData(); // Refetch all data when sheets change
-        }
-      )
-      .subscribe();
+    const sheetsSubscription = realtimeService.subscribeToSheets((payload) => {
+      console.log('Sheets changed in admin panel:', payload);
+      fetchData(); // Refetch all data when sheets change
+    });
 
     return () => {
       console.log('Cleaning up admin panel subscriptions');
-      supabase.removeChannel(questionsSubscription);
-      supabase.removeChannel(sheetsSubscription);
+      realtimeService.unsubscribe(questionsSubscription);
+      realtimeService.unsubscribe(sheetsSubscription);
     };
   }, [user, userRole]);
 
   const checkAdminAccess = async () => {
     if (user) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
+      const result = await profileService.getUserProfile(user.id);
       
-      if (data) {
-        setUserRole(data.role);
-        if (data.role !== 'admin') {
+      if (result.data) {
+        setUserRole(result.data.role);
+        if (result.data.role !== 'admin') {
           toast({
             title: "Access Denied",
             description: "You don't have admin privileges to access this panel.",
@@ -148,25 +105,19 @@ const AdminPanel = () => {
   const fetchData = async () => {
     console.log('Fetching admin panel data...');
     try {
-      const { data: sheetsData, error: sheetsError } = await supabase
-        .from('sheets')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [sheetsResult, questionsResult] = await Promise.all([
+        sheetService.getAllSheets(),
+        questionService.getAllQuestions()
+      ]);
 
-      if (sheetsError) throw sheetsError;
+      if (sheetsResult.error) throw sheetsResult.error;
+      if (questionsResult.error) throw questionsResult.error;
 
-      const { data: questionsData, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .order('order_index');
-
-      if (questionsError) throw questionsError;
-
-      console.log('Fetched sheets:', sheetsData?.length);
-      console.log('Fetched questions:', questionsData?.length);
+      console.log('Fetched sheets:', sheetsResult.data?.length);
+      console.log('Fetched questions:', questionsResult.data?.length);
       
-      setSheets(sheetsData || []);
-      setQuestions(questionsData || []);
+      setSheets(sheetsResult.data || []);
+      setQuestions(questionsResult.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -183,30 +134,17 @@ const AdminPanel = () => {
     e.preventDefault();
     
     try {
-      const sheetData = {
-        title: sheetForm.title,
-        description: sheetForm.description,
-        topics: sheetForm.topics.split(',').map(t => t.trim()).filter(Boolean)
-      };
-
       if (editingSheet) {
-        const { error } = await supabase
-          .from('sheets')
-          .update(sheetData)
-          .eq('id', editingSheet.id);
-
-        if (error) throw error;
+        const result = await sheetService.updateSheet(editingSheet.id, sheetForm);
+        if (result.error) throw result.error;
 
         toast({
           title: "Success",
           description: "Sheet updated successfully.",
         });
       } else {
-        const { error } = await supabase
-          .from('sheets')
-          .insert(sheetData);
-
-        if (error) throw error;
+        const result = await sheetService.createSheet(sheetForm);
+        if (result.error) throw result.error;
 
         toast({
           title: "Success",
@@ -232,34 +170,17 @@ const AdminPanel = () => {
     e.preventDefault();
     
     try {
-      const questionData = {
-        sheet_id: questionForm.sheet_id,
-        title: questionForm.title,
-        topic: questionForm.topic,
-        tags: questionForm.tags.split(',').map(t => t.trim()).filter(Boolean),
-        difficulty: questionForm.difficulty,
-        solve_url: questionForm.solve_url || null,
-        order_index: questionForm.order_index
-      };
-
       if (editingQuestion) {
-        const { error } = await supabase
-          .from('questions')
-          .update(questionData)
-          .eq('id', editingQuestion.id);
-
-        if (error) throw error;
+        const result = await questionService.updateQuestion(editingQuestion.id, questionForm);
+        if (result.error) throw result.error;
 
         toast({
           title: "Success",
           description: "Question updated successfully.",
         });
       } else {
-        const { error } = await supabase
-          .from('questions')
-          .insert(questionData);
-
-        if (error) throw error;
+        const result = await questionService.createQuestion(questionForm);
+        if (result.error) throw result.error;
 
         toast({
           title: "Success",
@@ -295,12 +216,8 @@ const AdminPanel = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('sheets')
-        .delete()
-        .eq('id', sheetId);
-
-      if (error) throw error;
+      const result = await sheetService.deleteSheet(sheetId);
+      if (result.error) throw result.error;
 
       toast({
         title: "Success",
@@ -323,12 +240,8 @@ const AdminPanel = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('questions')
-        .delete()
-        .eq('id', questionId);
-
-      if (error) throw error;
+      const result = await questionService.deleteQuestion(questionId);
+      if (result.error) throw result.error;
 
       toast({
         title: "Success",
@@ -349,8 +262,8 @@ const AdminPanel = () => {
     setEditingSheet(sheet);
     setSheetForm({
       title: sheet.title,
-      description: sheet.description,
-      topics: sheet.topics.join(', ')
+      description: sheet.description || '',
+      topics: formatArrayForInput(sheet.topics)
     });
     setIsSheetDialogOpen(true);
   };
@@ -361,7 +274,7 @@ const AdminPanel = () => {
       sheet_id: question.sheet_id,
       title: question.title,
       topic: question.topic,
-      tags: question.tags.join(', '),
+      tags: formatArrayForInput(question.tags),
       difficulty: question.difficulty,
       solve_url: question.solve_url || '',
       order_index: question.order_index

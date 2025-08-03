@@ -1,35 +1,12 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookmarkCheck, Clock, AlertCircle } from 'lucide-react';
 import { QuestionItem } from '@/components/QuestionItem';
-
-interface Sheet {
-  id: string;
-  title: string;
-  description: string;
-}
-
-interface Question {
-  id: string;
-  sheet_id: string;
-  title: string;
-  topic: string;
-  tags: string[];
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  solve_url?: string;
-}
-
-interface UserProgress {
-  question_id: string;
-  completed: boolean;
-  marked_for_revision: boolean;
-  note?: string;
-  time_spent?: number;
-  completed_at?: string;
-}
+import { sheetService, questionService, progressService } from '@/services/supabase';
+import { getDifficultyColor, calculateCompletionRate } from '@/utils';
+import type { Sheet, Question, UserProgress } from '@/types';
 
 const RevisionProblems = () => {
   const { user } = useAuth();
@@ -45,52 +22,51 @@ const RevisionProblems = () => {
   }, [user]);
 
   const fetchData = async () => {
+    if (!user) return;
+
+    setLoading(true);
     try {
-      // Fetch sheets
-      const { data: sheetsData, error: sheetsError } = await supabase
-        .from('sheets')
-        .select('*');
+      const [sheetsResult, questionsResult, progressResult] = await Promise.all([
+        sheetService.getAllSheets(),
+        questionService.getAllQuestions(),
+        progressService.getRevisionQuestions(user.id)
+      ]);
 
-      if (sheetsError) throw sheetsError;
+      if (sheetsResult.error) throw sheetsResult.error;
+      if (questionsResult.error) throw questionsResult.error;
+      if (progressResult.error) throw progressResult.error;
 
-      // Fetch questions
-      const { data: questionsData, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .order('order_index');
-
-      if (questionsError) throw questionsError;
-
-      // Fetch user progress (only revision items)
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('marked_for_revision', true);
-
-      if (progressError) throw progressError;
-
-      setSheets(sheetsData || []);
-      setQuestions(questionsData || []);
-      setUserProgress(progressData || []);
+      setSheets(sheetsResult.data || []);
+      setQuestions(questionsResult.data || []);
+      setUserProgress(progressResult.data || []);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching revision data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProgressUpdate = (questionId: string, updates: Partial<UserProgress>) => {
-    setUserProgress(prev => {
-      const existingIndex = prev.findIndex(p => p.question_id === questionId);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = { ...updated[existingIndex], ...updates };
-        return updated;
-      } else {
-        return [...prev, { question_id: questionId, completed: false, marked_for_revision: false, ...updates }];
-      }
-    });
+  const handleProgressUpdate = async (questionId: string, updates: Partial<UserProgress>) => {
+    if (!user) return;
+
+    try {
+      const result = await progressService.updateProgress(user.id, questionId, updates);
+      if (result.error) throw result.error;
+
+      // Update local state
+      setUserProgress(prev => {
+        const existingIndex = prev.findIndex(p => p.question_id === questionId);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = { ...updated[existingIndex], ...updates };
+          return updated;
+        } else {
+          return [...prev, result.data];
+        }
+      });
+    } catch (error) {
+      console.error('Error updating progress:', error);
+    }
   };
 
   // Get questions marked for revision
