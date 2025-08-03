@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import Layout from '@/components/Layout';
 import Dashboard from './Dashboard';
@@ -29,7 +29,7 @@ const Index = () => {
             </p>
           </div>
           <Button asChild size="lg">
-            <a href="/auth">Get Started</a>
+            <Link to="/auth">Get Started</Link>
           </Button>
         </div>
       </div>

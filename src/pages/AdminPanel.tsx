@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 interface Sheet {
   id: string;
@@ -48,6 +49,7 @@ const AdminPanel = () => {
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('student');
   const [isSheetDialogOpen, setIsSheetDialogOpen] = useState(false);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [editingSheet, setEditingSheet] = useState<Sheet | null>(null);
@@ -72,9 +74,31 @@ const AdminPanel = () => {
 
   useEffect(() => {
     if (user) {
+      checkAdminAccess();
       fetchData();
     }
   }, [user]);
+
+  const checkAdminAccess = async () => {
+    if (user) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data) {
+        setUserRole(data.role);
+        if (data.role !== 'admin') {
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges to access this panel.",
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -295,6 +319,21 @@ const AdminPanel = () => {
     });
     setIsQuestionDialogOpen(true);
   };
+
+  // Show access denied if not admin
+  if (!loading && userRole !== 'admin') {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="text-muted-foreground mb-6">You don't have permission to access the admin panel.</p>
+          <Button asChild>
+            <Link to="/">Go to Dashboard</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

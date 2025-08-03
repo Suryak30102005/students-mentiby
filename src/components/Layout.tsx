@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LogOut, User, Settings, BarChart3, BookmarkCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,9 +12,28 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const { user, signOut } = useAuth();
+  const [userRole, setUserRole] = useState<string>('student');
 
-  // Check if user is admin (you might want to store this in user metadata or profiles table)
-  const isAdmin = user?.email === 'admin@example.com'; // Replace with actual admin check
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data) {
+          setUserRole(data.role);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
+
+  // Check if user is admin
+  const isAdmin = userRole === 'admin';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -22,7 +43,7 @@ const Layout = ({ children }: LayoutProps) => {
             <h1 className="text-2xl font-bold text-foreground hover:text-primary transition-colors">Mentiby Coding Tracker</h1>
             <p className="text-sm text-muted-foreground">Track your coding progress</p>
           </Link>
-          {user && (
+          {user ? (
             <div className="flex items-center space-x-4">
               <ThemeToggle />
               <Button asChild variant="outline" size="sm">
@@ -52,6 +73,13 @@ const Layout = ({ children }: LayoutProps) => {
               <Button variant="outline" size="sm" onClick={signOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Sign Out</span>
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              <Button asChild>
+                <Link to="/auth">Sign In</Link>
               </Button>
             </div>
           )}
