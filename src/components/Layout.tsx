@@ -18,10 +18,10 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <header className="fixed top-0 left-0 right-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Mentiby Coding Tracker</h1>
+          <Link to="/" className="cursor-pointer">
+            <h1 className="text-2xl font-bold text-foreground hover:text-primary transition-colors">Mentiby Coding Tracker</h1>
             <p className="text-sm text-muted-foreground">Track your coding progress</p>
-          </div>
+          </Link>
           {user && (
             <div className="flex items-center space-x-4">
               <ThemeToggle />
