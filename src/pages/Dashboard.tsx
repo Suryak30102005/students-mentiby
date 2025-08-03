@@ -280,8 +280,8 @@ const Dashboard = () => {
                       const topicQuestions = filteredQuestions.filter(q => q.sheet_id === sheet.id && q.topic === topic);
                       
                       return (
-                        <Collapsible key={topic} defaultOpen={false} className="data-[state=open]:bg-muted/30 rounded-lg transition-all">
-                          <CollapsibleTrigger asChild>
+                        <Collapsible key={topic} defaultOpen={false} className="group data-[state=open]:bg-muted/30 rounded-lg transition-all">
+                          <CollapsibleTrigger className="w-full">
                             <Button 
                               variant="ghost" 
                               className="w-full justify-between p-4 h-auto hover:bg-muted/50 rounded-lg border border-transparent hover:border-border/50 transition-all"
@@ -302,7 +302,7 @@ const Dashboard = () => {
                                   <div className="text-sm font-semibold">{topicProgress.percentage}%</div>
                                   <Progress value={topicProgress.percentage} className="w-16 h-1" />
                                 </div>
-                                <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
+                                <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90" />
                               </div>
                             </Button>
                           </CollapsibleTrigger>
