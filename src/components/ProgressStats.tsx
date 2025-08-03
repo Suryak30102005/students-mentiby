@@ -9,7 +9,8 @@ import {
   TrendingUp,
   Trophy,
   Flame,
-  Calendar
+  Calendar,
+  Timer
 } from 'lucide-react';
 
 interface Question {
@@ -60,6 +61,13 @@ export function ProgressStats({ questions, userProgress }: ProgressStatsProps) {
   
   // Calculate average time per question
   const avgTimePerQuestion = completedQuestions > 0 ? Math.round(totalTimeSpent / completedQuestions) : 0;
+  
+  // Calculate today's completions
+  const todayStr = today.toISOString().split('T')[0];
+  const questionsCompletedToday = userProgress.filter(p => 
+    p.completed && p.completed_at && 
+    new Date(p.completed_at).toISOString().split('T')[0] === todayStr
+  ).length;
   
   // Difficulty breakdown
   const difficultyStats = {
@@ -126,6 +134,34 @@ export function ProgressStats({ questions, userProgress }: ProgressStatsProps) {
           <div className="text-2xl font-bold">{formatTime(totalTimeSpent)}</div>
           <p className="text-xs text-muted-foreground">
             Total practice time
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Average Time Per Question */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Average Time</CardTitle>
+          <Timer className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatTime(avgTimePerQuestion)}</div>
+          <p className="text-xs text-muted-foreground">
+            Per question solved
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Today's Progress */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Today's Progress</CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{questionsCompletedToday}</div>
+          <p className="text-xs text-muted-foreground">
+            Questions completed today
           </p>
         </CardContent>
       </Card>
