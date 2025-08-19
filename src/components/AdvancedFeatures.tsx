@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Flame } from 'lucide-react';
+import type { AdvancedFeaturesProps, UserProgress } from '@/types';
 
 interface StreakData {
   currentStreak: number;
@@ -8,26 +9,17 @@ interface StreakData {
   lastActivity: string;
 }
 
-interface AdvancedFeaturesProps {
-  userProgress: any[];
-  questions: any[];
-}
-
-export function AdvancedFeatures({ userProgress, questions }: AdvancedFeaturesProps) {
+export function AdvancedFeatures({ userProgress }: AdvancedFeaturesProps) {
   const [streakData, setStreakData] = useState<StreakData>({
     currentStreak: 0,
     longestStreak: 0,
     lastActivity: ''
   });
 
-  useEffect(() => {
-    calculateStreaks();
-  }, [userProgress]);
-
-  const calculateStreaks = () => {
+  const calculateStreaks = useCallback(() => {
     const completedDates = userProgress
-      .filter(p => p.completed && p.completed_at)
-      .map(p => new Date(p.completed_at).toDateString())
+      .filter((p: UserProgress) => p.completed && p.completed_at)
+      .map((p: UserProgress) => new Date(p.completed_at as string).toDateString())
       .filter((date, index, arr) => arr.indexOf(date) === index)
       .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
@@ -41,6 +33,7 @@ export function AdvancedFeatures({ userProgress, questions }: AdvancedFeaturesPr
     // Calculate current streak
     if (completedDates.includes(today) || completedDates.includes(yesterday)) {
       const startDate = completedDates.includes(today) ? today : yesterday;
+      // eslint-disable-next-line prefer-const
       let checkDate = new Date(startDate);
       
       while (completedDates.includes(checkDate.toDateString())) {
@@ -83,7 +76,11 @@ export function AdvancedFeatures({ userProgress, questions }: AdvancedFeaturesPr
       longestStreak,
       lastActivity: completedDates[0] || ''
     });
-  };
+  }, [userProgress]);
+
+  useEffect(() => {
+    calculateStreaks();
+  }, [calculateStreaks]);
 
   return (
     <Card className="h-fit">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -23,36 +23,7 @@ const DashboardView = () => {
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
-
-  // Set up real-time subscriptions
-  useEffect(() => {
-    if (!user) return;
-
-    console.log('Setting up real-time subscriptions for dashboard');
-
-    const questionsSubscription = realtimeService.subscribeToQuestions((payload) => {
-      console.log('Questions changed in dashboard:', payload);
-      fetchData();
-    });
-
-    const progressSubscription = realtimeService.subscribeToUserProgress((payload) => {
-      console.log('User progress changed in dashboard:', payload);
-      fetchData();
-    });
-
-    return () => {
-      console.log('Cleaning up dashboard subscriptions');
-      realtimeService.unsubscribe(questionsSubscription);
-      realtimeService.unsubscribe(progressSubscription);
-    };
-  }, [user]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -76,9 +47,38 @@ const DashboardView = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleProgressUpdate = async (questionId: string, updates: Partial<UserProgress>) => {
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user, fetchData]);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up real-time subscriptions for dashboard');
+
+    const questionsSubscription = realtimeService.subscribeToQuestions((payload) => {
+      console.log('Questions changed in dashboard:', payload);
+      fetchData();
+    });
+
+    const progressSubscription = realtimeService.subscribeToUserProgress((payload) => {
+      console.log('User progress changed in dashboard:', payload);
+      fetchData();
+    });
+
+    return () => {
+      console.log('Cleaning up dashboard subscriptions');
+      realtimeService.unsubscribe(questionsSubscription);
+      realtimeService.unsubscribe(progressSubscription);
+    };
+  }, [user, fetchData]);
+
+  const handleProgressUpdate = useCallback(async (questionId: string, updates: Partial<UserProgress>) => {
     if (!user) return;
 
     try {
@@ -99,7 +99,7 @@ const DashboardView = () => {
     } catch (error) {
       console.error('Error updating progress:', error);
     }
-  };
+  }, [user]);
 
   if (loading) {
     return (

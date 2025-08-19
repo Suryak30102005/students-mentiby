@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { ProgressCharts } from '@/components/ProgressCharts';
 import { ProgressStats } from '@/components/ProgressStats';
@@ -12,13 +12,7 @@ const ProgressAnalytics = () => {
   const [userProgress, setUserProgress] = useState<UserProgress[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -38,7 +32,13 @@ const ProgressAnalytics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user, fetchData]);
 
   if (loading) {
     return (
