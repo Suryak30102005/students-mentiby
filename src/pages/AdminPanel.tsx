@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,12 +55,57 @@ const AdminPanel = () => {
     order_index: 0
   });
 
+  const fetchData = useCallback(async () => {
+    console.log('Fetching admin panel data...');
+    try {
+      const [sheetsResult, questionsResult] = await Promise.all([
+        sheetService.getAllSheets(),
+        questionService.getAllQuestions()
+      ]);
+
+      if (sheetsResult.error) throw sheetsResult.error;
+      if (questionsResult.error) throw questionsResult.error;
+
+      console.log('Fetched sheets:', sheetsResult.data?.length);
+      console.log('Fetched questions:', questionsResult.data?.length);
+
+      setSheets(sheetsResult.data || []);
+      setQuestions(questionsResult.data || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  const checkAdminAccess = useCallback(async () => {
+    if (user) {
+      const result = await profileService.getUserProfile(user.id);
+
+      if (result.data) {
+        setUserRole(result.data.role);
+        if (result.data.role !== 'admin') {
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges to access this panel.",
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  }, [user, toast]);
+
   useEffect(() => {
     if (user) {
       checkAdminAccess();
       fetchData();
     }
-  }, [user]);
+  }, [user, checkAdminAccess, fetchData]);
 
   // Set up real-time subscriptions for admin panel
   useEffect(() => {
@@ -83,52 +128,7 @@ const AdminPanel = () => {
       realtimeService.unsubscribe(questionsSubscription);
       realtimeService.unsubscribe(sheetsSubscription);
     };
-  }, [user, userRole]);
-
-  const checkAdminAccess = async () => {
-    if (user) {
-      const result = await profileService.getUserProfile(user.id);
-      
-      if (result.data) {
-        setUserRole(result.data.role);
-        if (result.data.role !== 'admin') {
-          toast({
-            title: "Access Denied",
-            description: "You don't have admin privileges to access this panel.",
-            variant: "destructive",
-          });
-        }
-      }
-    }
-  };
-
-  const fetchData = async () => {
-    console.log('Fetching admin panel data...');
-    try {
-      const [sheetsResult, questionsResult] = await Promise.all([
-        sheetService.getAllSheets(),
-        questionService.getAllQuestions()
-      ]);
-
-      if (sheetsResult.error) throw sheetsResult.error;
-      if (questionsResult.error) throw questionsResult.error;
-
-      console.log('Fetched sheets:', sheetsResult.data?.length);
-      console.log('Fetched questions:', questionsResult.data?.length);
-      
-      setSheets(sheetsResult.data || []);
-      setQuestions(questionsResult.data || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, userRole, fetchData]);
 
   const handleSheetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

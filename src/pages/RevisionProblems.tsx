@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,13 +15,7 @@ const RevisionProblems = () => {
   const [userProgress, setUserProgress] = useState<UserProgress[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -44,9 +38,15 @@ const RevisionProblems = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleProgressUpdate = async (questionId: string, updates: Partial<UserProgress>) => {
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user, fetchData]);
+
+  const handleProgressUpdate = useCallback(async (questionId: string, updates: Partial<UserProgress>) => {
     if (!user) return;
 
     try {
@@ -67,7 +67,7 @@ const RevisionProblems = () => {
     } catch (error) {
       console.error('Error updating progress:', error);
     }
-  };
+  }, [user]);
 
   // Get questions marked for revision
   const revisionQuestions = questions.filter(q => 

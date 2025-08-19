@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,31 +14,8 @@ import {
   Circle 
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import type { Question, UserProgress, SearchAndFilterProps } from '@/types';
 
-interface Question {
-  id: string;
-  sheet_id: string;
-  title: string;
-  topic: string;
-  tags: string[];
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  solve_url?: string;
-}
-
-interface UserProgress {
-  question_id: string;
-  completed: boolean;
-  marked_for_revision: boolean;
-  note?: string;
-  time_spent?: number;
-}
-
-interface SearchAndFilterProps {
-  questions: Question[];
-  userProgress: UserProgress[];
-  onFilteredQuestionsChange: (questions: Question[]) => void;
-  onSortChange: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
-}
 
 export function SearchAndFilter({ 
   questions, 
@@ -58,8 +35,8 @@ export function SearchAndFilter({
   const uniqueTopics = [...new Set(questions.map(q => q.topic))];
 
   // Apply filters
-  const applyFilters = () => {
-    let filtered = questions.filter(question => {
+  const applyFilters = useCallback(() => {
+    const filtered = questions.filter(question => {
       const matchesSearch = question.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            question.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       
@@ -85,21 +62,25 @@ export function SearchAndFilter({
       let comparison = 0;
       
       switch (sortBy) {
-        case 'title':
+        case 'title': {
           comparison = a.title.localeCompare(b.title);
           break;
-        case 'difficulty':
+        }
+        case 'difficulty': {
           const difficultyOrder = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
           comparison = difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
           break;
-        case 'topic':
+        }
+        case 'topic': {
           comparison = a.topic.localeCompare(b.topic);
           break;
-        case 'completion':
+        }
+        case 'completion': {
           const aCompleted = userProgress.find(p => p.question_id === a.id)?.completed || false;
           const bCompleted = userProgress.find(p => p.question_id === b.id)?.completed || false;
           comparison = Number(aCompleted) - Number(bCompleted);
           break;
+        }
         default:
           comparison = 0;
       }
@@ -108,12 +89,12 @@ export function SearchAndFilter({
     });
 
     onFilteredQuestionsChange(filtered);
-  };
+  }, [questions, userProgress, searchTerm, selectedDifficulty, selectedTopic, selectedStatus, sortBy, sortOrder, onFilteredQuestionsChange]);
 
   // Apply filters whenever any filter changes
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, selectedDifficulty, selectedTopic, selectedStatus, sortBy, sortOrder, questions, userProgress]);
+  }, [applyFilters]);
 
   const clearFilters = () => {
     setSearchTerm('');
